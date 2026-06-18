@@ -85,35 +85,45 @@ static int alloc_worst_fit(const char *pid, int size) {
 }
 
 static void free_process(const char *pid) {
-    Block *prev = NULL;
-    Block *cur  = head;
+    /* Recorre TODA la lista liberando cada bloque que pertenezca al proceso,
+       ya que un mismo PID puede tener mas de un bloque asignado si hizo
+       varios ALLOC sin liberar entre medio. */
+    Block *prev  = NULL;
+    Block *cur   = head;
+    int    found = 0;
 
     while (cur) {
-        if (!cur->is_free && strcmp(cur->pid, pid) == 0)
-            break;
+        Block *after = cur->next; /* siguiente nodo a visitar, guardado antes de mutar la lista */
+
+        if (!cur->is_free && strcmp(cur->pid, pid) == 0) {
+            found = 1;
+            cur->is_free = 1;
+            cur->pid[0]  = '\0';
+
+            /* Coalescencia con el bloque siguiente */
+            if (cur->next && cur->next->is_free) {
+                Block *nxt = cur->next;
+                cur->size += nxt->size;
+                cur->next  = nxt->next;
+                if (after == nxt) after = cur->next; /* 'after' apuntaba a nxt, que se libera */
+                free(nxt);
+            }
+
+            /* Coalescencia con el bloque anterior */
+            if (prev && prev->is_free) {
+                prev->size += cur->size;
+                prev->next  = cur->next;
+                free(cur);
+                cur = prev; /* el bloque fusionado pasa a ser 'cur' para que prev quede consistente */
+            }
+        }
+
         prev = cur;
-        cur  = cur->next;
+        cur  = after;
     }
 
-    if (!cur) {
+    if (!found) {
         fprintf(stderr, "Advertencia: proceso %s no encontrado para liberar\n", pid);
-        return;
-    }
-
-    cur->is_free = 1;
-    cur->pid[0]  = '\0';
-
-    if (cur->next && cur->next->is_free) {
-        Block *nxt   = cur->next;
-        cur->size   += nxt->size;
-        cur->next    = nxt->next;
-        free(nxt);
-    }
-
-    if (prev && prev->is_free) {
-        prev->size += cur->size;
-        prev->next  = cur->next;
-        free(cur);
     }
 }
 
@@ -247,6 +257,11 @@ int main(int argc, char *argv[]) {
             int  size;
             if (sscanf(line, "%*s %31s %d", pid, &size) != 2) {
                 fprintf(stderr, "Advertencia: línea ALLOC mal formateada: %s\n", line);
+                continue;
+            }
+
+            if (size <= 0) {
+                fprintf(stderr, "Advertencia: tamaño invalido en ALLOC %s (%d): se ignora la linea\n", pid, size);
                 continue;
             }
 

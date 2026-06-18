@@ -76,3 +76,7 @@ Estado final de la memoria:
 |-----------------|---------------------------------------------------------|
 | `traza1.txt`    | Flujo normal: alloc, free, compact, alloc posterior     |
 | `traza_borde.txt` | Fragmentación extrema que requiere compactación       |
+| `traza_frag.txt` | Tres huecos de tamaños distintos (250, 200, 400); cada política elige uno diferente, lo que produce índices de fragmentación distintos. Termina con un ALLOC que falla por fragmentación externa aunque hay memoria libre suficiente en total. |
+| `traza_frag_compact.txt` | Igual al anterior pero con un `COMPACT` antes del ALLOC final, demostrando que la compactación revierte la falla. |
+| `traza_multi_pid.txt` | Un mismo PID solicita memoria dos veces sin liberar entre medio; `FREE` debe liberar ambos bloques. |
+| `traza_size_invalido.txt` | Una línea `ALLOC` con tamaño negativo; el simulador debe descartarla con una advertencia en vez de corromper la contabilidad. |
