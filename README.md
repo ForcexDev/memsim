@@ -60,7 +60,7 @@ Procesos asignados: 5
 Memoria utilizada: 63.48%
 Indice de Fragmentacion Externa: 0.0000
 Estado final de la memoria:
-[Ocupado P3 100] -> [Ocupado P4 150] -> [Ocupado P5 400] -> [Libre 374]
+[Ocupado P4 150] -> [Ocupado P3 100] -> [Ocupado P5 400] -> [Libre 374]
 ```
 
 ## Comportamiento
